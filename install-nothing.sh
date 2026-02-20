@@ -2,29 +2,30 @@
 set -euo pipefail
 
 readonly APP_NAME="install-nothing"
-readonly APP_VERSION="1.0.0"
+readonly APP_VERSION="2.0.0"
+
+FAST_MODE=0
+QUIET_MODE=0
+SEED=""
 
 usage() {
   cat <<USAGE
 $APP_NAME v$APP_VERSION
 
-A dramatic installer that carefully installs absolutely nothing.
+Fake Debian-style installer that installs delightfully useless UNIX tools.
+Nothing is actually installed.
 
 Usage:
   ./install-nothing.sh [--fast] [--seed N] [--quiet]
   ./install-nothing.sh --help
 
 Options:
-  --fast       Reduce wait times between steps.
-  --seed N     Seed the random number generator for reproducible output.
-  --quiet      Print only critical milestones.
+  --fast       Reduce all animation delays.
+  --seed N     Seed random output for deterministic runs.
+  --quiet      Suppress most apt-like chatter.
   -h, --help   Show this message.
 USAGE
 }
-
-FAST_MODE=0
-QUIET_MODE=0
-SEED=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,75 +58,144 @@ if [[ -n "$SEED" ]]; then
   RANDOM=$SEED
 fi
 
-announce() {
+say() {
   [[ "$QUIET_MODE" -eq 1 ]] && return 0
   printf '%s\n' "$*"
 }
 
-sleep_for() {
-  local unit_ms="$1"
+pause_ms() {
+  local ms="$1"
+  local seconds
   if [[ "$FAST_MODE" -eq 1 ]]; then
     return 0
   fi
-  # shellcheck disable=SC2059
-  printf -v _seconds '0.%03d' "$unit_ms"
-  sleep "$_seconds"
+  printf -v seconds '0.%03d' "$ms"
+  sleep "$seconds"
 }
 
-spin_step() {
-  local label="$1"
-  local loops="$2"
-  local chars='|/-\\'
-  local i frame
+progress_line() {
+  local pct="$1"
+  local current="$2"
+  local total="$3"
+  local rate="$4"
+  local remaining="$5"
+  local bar_width=28
+  local filled=$((pct * bar_width / 100))
+  local empty=$((bar_width - filled))
+  local filled_bar
+  local empty_bar
 
-  printf '%s ' "$label"
-  for ((i=0; i<loops; i++)); do
-    frame="${chars:i%4:1}"
-    printf '\r%s %s' "$label" "$frame"
-    sleep_for $((30 + RANDOM % 90))
+  printf -v filled_bar '%*s' "$filled" ''
+  printf -v empty_bar '%*s' "$empty" ''
+  filled_bar=${filled_bar// /#}
+  empty_bar=${empty_bar// /.}
+
+  printf '\r%3d%% [%s%s] %d/%d kB %s %s' \
+    "$pct" "$filled_bar" "$empty_bar" "$current" "$total" "$rate" "$remaining"
+}
+
+animate_fetch() {
+  local total="$1"
+  local current=0
+  local pct=0
+  local step
+
+  for step in 1 2 3 4 5 6 7 8 9 10; do
+    current=$((total * step / 10))
+    pct=$((step * 10))
+    progress_line "$pct" "$current" "$total" "$((500 + RANDOM % 1900)) kB/s" "0s"
+    pause_ms $((50 + RANDOM % 110))
   done
-  printf '\r%s done\n' "$label"
+  printf '\n'
 }
 
-random_phrase() {
-  local phrases=(
-    "Calibrating vacuum tubes"
-    "Indexing imaginary packages"
-    "Resolving philosophical dependencies"
-    "Compiling quantum placeholders"
-    "Fetching bytes from /dev/null"
-    "Negotiating with cosmic package registry"
-    "Optimizing empty folders"
-    "Verifying checksum of nothingness"
-  )
-  printf '%s' "${phrases[RANDOM % ${#phrases[@]}]}"
+random_pkg_count() {
+  printf '%d' "$((18 + RANDOM % 14))"
 }
 
-print_header() {
-  cat <<'HEADER'
-===========================================
-       INSTALL NOTHING (BASH EDITION)
-===========================================
-HEADER
+random_total_size() {
+  printf '%d' "$((3200 + RANDOM % 9000))"
+}
+
+pkg_list=(
+  sl
+  cowsay
+  fortune-mod
+  cmatrix
+  lolcat
+  neofetch
+  htop
+  figlet
+  toilet
+  ninvaders
+  asciiquarium
+)
+
+show_apt_preamble() {
+  say "Reading package lists... Done"
+  pause_ms 140
+  say "Building dependency tree... Done"
+  pause_ms 120
+  say "Reading state information... Done"
+  pause_ms 120
+
+  local count
+  count="$(random_pkg_count)"
+  say "The following NEW packages will be installed:"
+  say "  ${pkg_list[*]}"
+  say "0 upgraded, ${#pkg_list[@]} newly installed, 0 to remove and ${count} not upgraded."
+}
+
+show_download_phase() {
+  local total
+  total="$(random_total_size)"
+  say "Need to get ${total} kB of archives."
+  say "After this operation, $((1200 + RANDOM % 9000)) kB of additional disk space will be used."
+  say "Get:1 http://deb.debian.org/debian stable/main amd64 fun-packages all 1.0 [${total} kB]"
+  animate_fetch "$total"
+  say "Fetched ${total} kB in 0s ($((800 + RANDOM % 2500)) kB/s)"
+}
+
+show_unpack_phase() {
+  local i pkg
+  for i in "${!pkg_list[@]}"; do
+    pkg="${pkg_list[$i]}"
+    say "Selecting previously unselected package ${pkg}."
+    pause_ms $((50 + RANDOM % 80))
+    say "(Reading database ... $((42000 + i * 101 + RANDOM % 40)) files and directories currently installed.)"
+    pause_ms $((40 + RANDOM % 60))
+    say "Preparing to unpack .../${pkg}_${i}.deb ..."
+    pause_ms $((35 + RANDOM % 50))
+    say "Unpacking ${pkg} (1.0-${i}) ..."
+    pause_ms $((45 + RANDOM % 70))
+  done
+}
+
+show_setup_phase() {
+  local pkg
+  for pkg in "${pkg_list[@]}"; do
+    say "Setting up ${pkg} (1.0-fake) ..."
+    pause_ms $((45 + RANDOM % 70))
+  done
+
+  say "Processing triggers for man-db (2.11.2-2) ..."
+  pause_ms 80
+  say "Processing triggers for install-nothing (0.0.0) ..."
+}
+
+show_epilogue() {
+  printf '\n'
+  printf 'All packages installed successfully.\n'
+  printf 'Just kidding: no packages were harmed during this session.\n'
+  printf 'System state: delightfully unchanged.\n'
 }
 
 main() {
-  print_header
-  announce "Starting installation workflow..."
-
-  local step_count=7
-  local step
-  for ((step=1; step<=step_count; step++)); do
-    spin_step "[$step/$step_count] $(random_phrase)" $((8 + RANDOM % 8))
-  done
-
-  echo
-  echo "✔ Successfully installed nothing."
-  echo "✔ Disk usage impact: 0 bytes."
-  echo "✔ Regret level: moderate."
-
-  announce
-  announce "Tip: Run again with --seed for deterministic absurdity."
+  show_apt_preamble
+  show_download_phase
+  show_unpack_phase
+  show_setup_phase
+  show_epilogue
 }
 
 main

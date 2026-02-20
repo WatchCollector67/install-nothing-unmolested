@@ -1,8 +1,8 @@
 # install-nothing (bash rewrite)
 
-A complete Bash rewrite of the playful **install-nothing** concept.
+A Bash-only fake installer that mimics a Debian `apt` / `dpkg` install session.
 
-This script performs a theatrical install pipeline and then proudly reports that it installed absolutely nothing.
+It theatrically "installs" classic fun UNIX tools like `cowsay`, `sl`, `cmatrix`, `lolcat`, and more — while installing absolutely nothing.
 
 ## Run
 
@@ -10,16 +10,17 @@ This script performs a theatrical install pipeline and then proudly reports that
 ./install-nothing.sh
 ```
 
+No setup, runtime, or extra dependencies needed.
+
 ## Options
 
-- `--fast` - skip animation delays
-- `--seed N` - deterministic random output for demos/tests
-- `--quiet` - suppress non-essential lines
+- `--fast` - skip animation delays for quick demos
+- `--seed N` - deterministic pseudo-random output
+- `--quiet` - reduce apt-like chatter
 - `--help` - show usage
 
 ## Example
 
 ```bash
-./install-nothing.sh --seed 42 --fast
+./install-nothing.sh --seed 42
 ```
-
