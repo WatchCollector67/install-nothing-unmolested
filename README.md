@@ -25,7 +25,6 @@ No setup, runtime, or extra dependencies needed.
 ./install-nothing.sh --seed 42
 ```
 
-upx@schism:~/Downloads$ ./install-nothing.sh --seed 231
 Reading package lists... Done
 Building dependency tree... Done
 Reading state information... Done
